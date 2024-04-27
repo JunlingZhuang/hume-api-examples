@@ -5,7 +5,7 @@ import {
   getAudioStream,
   getSupportedMimeType,
   VoiceClient,
-} from '@humeai/voice';
+} from "@humeai/voice";
 
 /**
  * type safe getElement utility function
@@ -19,14 +19,14 @@ function getElementById<T extends HTMLElement>(id: string): T | null {
 }
 
 (async () => {
-  const authBtn = getElementById<HTMLButtonElement>('auth-btn');
-  const startBtn = getElementById<HTMLButtonElement>('start-btn');
-  const endBtn = getElementById<HTMLButtonElement>('end-btn');
-  const chat = getElementById<HTMLDivElement>('chat');
+  const authBtn = getElementById<HTMLButtonElement>("auth-btn");
+  const startBtn = getElementById<HTMLButtonElement>("start-btn");
+  const endBtn = getElementById<HTMLButtonElement>("end-btn");
+  const chat = getElementById<HTMLDivElement>("chat");
 
-  authBtn?.addEventListener('click', authenticate);
-  startBtn?.addEventListener('click', connect);
-  endBtn?.addEventListener('click', disconnect);
+  authBtn?.addEventListener("click", authenticate);
+  startBtn?.addEventListener("click", connect);
+  endBtn?.addEventListener("click", disconnect);
 
   /**
    * audio playback queue
@@ -36,7 +36,7 @@ function getElementById<T extends HTMLElement>(id: string): T | null {
   /**
    * mimeType supported by the browser the application is running in
    */
-  const mimeType = result.success ? result.mimeType : 'audio/webm';
+  const mimeType = result.success ? result.mimeType : "audio/webm";
   /**
    * token used to make authenticated request
    */
@@ -66,32 +66,34 @@ function getElementById<T extends HTMLElement>(id: string): T | null {
    * fetches access token using the API key and client secret specified within your environment variables
    */
   async function authenticate(): Promise<void> {
-    const apiKey = import.meta.env.VITE_HUME_API_KEY || '';
-    const clientSecret = import.meta.env.VITE_HUME_CLIENT_SECRET || '';
+    const apiKey = import.meta.env.VITE_HUME_API_KEY || "";
+    console.log(apiKey);
+    const clientSecret = import.meta.env.VITE_HUME_CLIENT_SECRET || "";
+    console.log(clientSecret);
 
     const authString = `${apiKey}:${clientSecret}`;
     const encoded = btoa(authString);
 
     try {
       // see proxy configuration within the vite.config.js file
-      const res = await fetch('https://api.hume.ai/oauth2-cc/token', {
-        method: 'POST',
+      const res = await fetch("https://api.hume.ai/oauth2-cc/token", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          "Content-Type": "application/x-www-form-urlencoded",
           Authorization: `Basic ${encoded}`,
         },
         body: new URLSearchParams({
-          grant_type: 'client_credentials',
+          grant_type: "client_credentials",
         }).toString(),
-        cache: 'no-cache',
+        cache: "no-cache",
       });
       const data = (await res.json()) as { access_token: string };
-      accessToken = String(data['access_token']);
+      accessToken = String(data["access_token"]);
       // update ui state
       if (authBtn) authBtn.disabled = true;
       if (startBtn) startBtn.disabled = false;
     } catch (e) {
-      console.error('Failed to authenticate:', e);
+      console.error("Failed to authenticate:", e);
     }
   }
 
@@ -102,27 +104,27 @@ function getElementById<T extends HTMLElement>(id: string): T | null {
     // creates minimal EVI configuration
     const config = createConfig({
       auth: {
-        type: 'accessToken',
+        type: "accessToken",
         value: accessToken,
       },
     });
     // instantiates the VoiceClient with configuration
     client = VoiceClient.create(config);
     // handler for Web Socket open event, triggered when connection is first established
-    client.on('open', async () => {
-      console.log('Web socket connection opened');
+    client.on("open", async () => {
+      console.log("Web socket connection opened");
       await captureAudio();
     });
     // handler for Web Socket message event, triggered whenever a message is received from the server through the Web Socket
-    client.on('message', async (message) => {
+    client.on("message", async (message) => {
       switch (message.type) {
-        case 'user_message':
-        case 'assistant_message':
+        case "user_message":
+        case "assistant_message":
           const { role, content } = message.message;
           appendMessage(role, content);
           break;
 
-        case 'audio_output':
+        case "audio_output":
           const audioOutput = message.data;
           const blob = base64ToBlob(audioOutput, mimeType);
           audioQueue.push(blob);
@@ -131,14 +133,14 @@ function getElementById<T extends HTMLElement>(id: string): T | null {
           }
           break;
 
-        case 'user_interruption':
+        case "user_interruption":
           stopAudio();
           break;
       }
     });
     // handler for Web Socket close event, triggered when connection is closed
-    client.on('close', () => {
-      console.log('Web socket connection closed');
+    client.on("close", () => {
+      console.log("Web socket connection closed");
     });
     // establish secure Web Socket connection
     client.connect();
@@ -163,7 +165,7 @@ function getElementById<T extends HTMLElement>(id: string): T | null {
     // closed the Web Socket connection
     client?.disconnect();
     // adds "conversation ended" message to the chat
-    appendMessage('system', 'Conversation ended.');
+    appendMessage("system", "Conversation ended.");
   }
 
   /**
@@ -232,11 +234,11 @@ function getElementById<T extends HTMLElement>(id: string): T | null {
    * @param content transcript of the audio
    */
   function appendMessage(
-    role: 'assistant' | 'system' | 'user',
+    role: "assistant" | "system" | "user",
     content: string
   ): void {
     const timestamp = new Date().toLocaleTimeString();
-    const messageEl = document.createElement('p');
+    const messageEl = document.createElement("p");
     messageEl.innerHTML = `<strong>[${timestamp}] ${role}:</strong> ${content}`;
     chat?.appendChild(messageEl);
   }
